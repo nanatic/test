@@ -114,6 +114,14 @@ def generate_field(field_config, record, field_index):
         options = field_config.get('options', [])
         return random.choice(options)
 
+    # Обработка полей типа 'enum'
+    elif field_type == 'enum':
+        options = field_config.get('options', [])
+        if options:
+            return random.choice(options)
+        else:
+            return None
+
     # Обработка полей даты
     elif field_type == 'date':
         min_date = field_config.get('min', '2000-01-01')
@@ -144,26 +152,25 @@ def generate_field(field_config, record, field_index):
         return None  # Неизвестный тип поля
 
 
-def generate_complex_subform(subform_config, record, field_index):
-    """Генерирует данные для сложных подформ."""
-    subform_type = subform_config.get('type')
-    if subform_type == 'array':
-        items_config = subform_config.get('items', {})
-        num_items = random.randint(1, 5)  # Количество записей в массиве
-        items = []
-        for _ in range(num_items):
-            item = {}
-            for field_name, field_conf in items_config.get('properties', {}).items():
-                item[field_name] = generate_field(field_conf, item, field_index)
-            items.append(item)
-        return items
-    elif subform_type == 'object':
-        item = {}
-        for field_name, field_conf in subform_config.get('properties', {}).items():
-            item[field_name] = generate_field(field_conf, record, field_index)
-        return item
-    else:
-        return None
+def process_sub_form(sub_form, record, parent_prefix=''):
+    """
+    Рекурсивно обрабатывает подформы и генерирует соответствующие данные.
+    """
+    sub_form_name = sub_form.get('name', 'Unnamed_Subform')
+    fields = sub_form.get('fields', {})
+    nested_sub_forms = sub_form.get('sub_forms', [])
+
+    # Префикс для вложенных полей, чтобы избежать конфликтов имен
+    current_prefix = f"{parent_prefix}{sub_form_name}_" if parent_prefix else f"{sub_form_name}_"
+
+    # Генерация полей текущей подформы
+    for field_name, field_conf in fields.items():
+        full_field_name = f"{current_prefix}{field_name}"
+        record[full_field_name] = generate_field(field_conf, record, len(record) + 1)
+
+    # Рекурсивная генерация вложенных подформ
+    for nested_sub_form in nested_sub_forms:
+        process_sub_form(nested_sub_form, record, current_prefix)
 
 
 def generate_records(tables, num_records=100):
@@ -178,44 +185,14 @@ def generate_records(tables, num_records=100):
             fields = table.get('fields', {})
             for field_name, field_conf in fields.items():
                 record[field_name] = generate_field(field_conf, record, i)
-            # Генерация подформ
+            # Генерация подформ рекурсивно
             sub_forms = table.get('sub_forms', [])
             for sub_form in sub_forms:
-                sub_form_name = sub_form.get('name', 'Unnamed_Subform')
-                sub_form_type = sub_form.get('type', 'object')  # По умолчанию объект
-                sub_form_fields = sub_form.get('fields', {})
-                if sub_form_type == 'array':
-                    # Генерация массива объектов
-                    record[sub_form_name] = []
-                    num_items = random.randint(1, 5)  # Количество записей в массиве
-                    for j in range(1, num_items + 1):
-                        sub_record = {}
-                        for sub_field, sub_conf in sub_form_fields.items():
-                            if isinstance(sub_conf, dict):
-                                sub_record[sub_field] = generate_field(sub_conf, sub_record, j)
-                            else:
-                                # Если поле не является словарём конфигурации
-                                sub_record[sub_field] = sub_conf
-                        record[sub_form_name].append(sub_record)
-                elif sub_form_type == 'object':
-                    # Генерация одного объекта подформы
-                    sub_record = {}
-                    for sub_field, sub_conf in sub_form_fields.items():
-                        sub_record[sub_field] = generate_field(sub_conf, sub_record, i)
-                    record[sub_form_name] = sub_record
-                else:
-                    # Другие типы подформ, если есть
-                    record[sub_form_name] = None
+                process_sub_form(sub_form, record)
             records.append(record)
 
         # Преобразование записей в DataFrame
-        df = pd.json_normalize(records, sep='_')
-
-        # Сериализация массивов как JSON строк
-        for sub_form in sub_forms:
-            sub_form_name = sub_form.get('name', 'Unnamed_Subform')
-            if sub_form_name in df.columns:
-                df[sub_form_name] = df[sub_form_name].apply(lambda x: json.dumps(x, ensure_ascii=False))
+        df = pd.DataFrame(records)
 
         # Сохранение в CSV
         # Замена недопустимых символов в имени файла
@@ -235,6 +212,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
