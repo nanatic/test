@@ -1,0 +1,67 @@
+{
+  "tables": [
+    {
+      "name": "A.6.2 Сведения о ЗРА узла одоризации",
+      "fields": {
+        "Тип ЗРА": {
+          "type": "list",
+          "options": [
+            "Тип1",
+            "Тип2",
+            "Тип3",
+            "Тип4"
+          ]
+        },
+        "Привод": {
+          "type": "string",
+          "pattern": "Привод{i}"
+        },
+        "Год ввода в эксплуатацию": {
+          "type": "integer",
+          "min": 1990,
+          "max": 2024,
+          "distribution": "uniform",
+          "round": 0
+        },
+        "Dy (мм)": {
+          "type": "float",
+          "min": 100.0,
+          "max": 1000.0,
+          "distribution": "uniform",
+          "round": 1
+        },
+        "Давление, Py (МПа)": {
+          "type": "float",
+          "min": 0.5,
+          "max": 15.0,
+          "distribution": "gaussian",
+          "round": 2
+        },
+        "Завод изготовитель": {
+          "type": "string",
+          "pattern": "Завод{i}"
+        },
+        "Недопустимые дефекты в соответствии с СТО Газпром 2-4.1-406-2009": {
+          "type": "list",
+          "options": [
+            "Дефект1",
+            "Дефект2",
+            "Дефект3",
+            "Дефект4"
+          ]
+        },
+        "Ремонтопригодных дефектов": {
+          "type": "integer",
+          "min": 0,
+          "max": 10,
+          "distribution": "uniform",
+          "round": 0
+        },
+        "Примечание": {
+          "type": "string",
+          "pattern": "Примечание{i}"
+        }
+      }
+    }
+  ]
+}

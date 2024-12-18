@@ -6,7 +6,7 @@ import random
 from datetime import datetime, timedelta
 import re
 
-# Папки с JSON-конфигурациями и выходными CSV
+# Папки с JSON-конфигурациями и выходными Excel
 TABLES_DIR = 'tables'
 OUTPUT_DIR = 'test_data'
 
@@ -194,12 +194,15 @@ def generate_records(tables, num_records=100):
         # Преобразование записей в DataFrame
         df = pd.DataFrame(records)
 
-        # Сохранение в CSV
+        # Сохранение в Excel
         # Замена недопустимых символов в имени файла
         safe_table_name = re.sub(r'[\\/*?:"<>|]', "_", table_name)
-        output_path = os.path.join(OUTPUT_DIR, f'{safe_table_name}.csv')
-        df.to_csv(output_path, index=False, encoding='utf-8-sig')
-        print(f'Данные сохранены в {output_path}\n')
+        output_path = os.path.join(OUTPUT_DIR, f'{safe_table_name}.xlsx')
+        try:
+            df.to_excel(output_path, index=False, engine='openpyxl')
+            print(f'Данные сохранены в {output_path}\n')
+        except Exception as e:
+            print(f'Ошибка при сохранении данных в {output_path}: {e}\n')
 
 
 def main():
